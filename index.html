@@ -254,7 +254,7 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg2);color:var(--text);mi
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const d2r = d => d * Math.PI / 180;
-const RADII = [0.6, 1.2, 2.5, 5, 10, 20];
+const SEARCH_RADIUS = 50; // كم — بحث واحد شامل
 const GPS_OPT = {enableHighAccuracy:true, timeout:25000, maximumAge:0};
 
 const CATS = {
@@ -501,34 +501,24 @@ function showState(msg) {
 async function search(la, lo, cat) {
   const s = ++seqN;
   const cfg = CATS[cat];
-  showState(cfg.icon + ' جارٍ البحث...');
+  showState(cfg.icon + ' جارٍ البحث في نطاق 50 كم...');
   const city = await reverseGeo(la, lo);
   if(s !== seqN) return;
 
-  async function tryRadius(ri) {
-    const r = RADII[ri];
-    if(!r) return false;
-    showState(cfg.icon + ' البحث في نطاق ' + (r<1 ? r*1000+'م' : r+'كم') + '...');
-    let raw;
-    try {
-      raw = await fetchOverpass(la, lo, r, cfg.tags);
-    } catch(e) {
-      if(s !== seqN) return true;
-      showState('⚠️ تعذّر الاتصال بالخادم. تحقق من الإنترنت وحاول مجدداً.');
-      return true;
-    }
-    if(s !== seqN) return true;
-    const items = processItems(raw, la, lo, r);
-    if(!items.length) return false; // try next radius
-    renderResults(items, r, city, 6, ri < RADII.length-1 ? ()=>tryRadius(ri+1) : null);
-    if(ttsOn) ttsPlay();
-    return true;
+  let raw;
+  try {
+    raw = await fetchOverpass(la, lo, SEARCH_RADIUS, cfg.tags);
+  } catch(e) {
+    if(s !== seqN) return;
+    showState('⚠️ تعذّر الاتصال. تحقق من الإنترنت وحاول مجدداً.');
+    return;
   }
+  if(s !== seqN) return;
 
-  for(let i=0; i<RADII.length; i++) {
-    if(await tryRadius(i)) return;
-  }
-  renderResults([], 20, city);
+  // كل النتائج مرتبة من الأقرب للأبعد
+  const items = processItems(raw, la, lo, SEARCH_RADIUS);
+  renderResults(items, SEARCH_RADIUS, city, 6, null);
+  if(ttsOn) ttsPlay();
 }
 
 // ─── CATEGORY SELECT ──────────────────────────────────────────────────────────
