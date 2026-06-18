@@ -161,7 +161,7 @@
         .mbtn{flex-shrink:0;padding:7px 12px;border-radius:9px;font-size:11px;font-weight:700;background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);text-decoration:none;transition:all .2s;white-space:nowrap}
         .mbtn:hover{background:rgba(255,215,0,0.22)}
         .abar{position:absolute;right:0;top:0;bottom:0;width:4px;border-radius:0 3px 3px 0;background:var(--ac)}
-        .pstate{font-size:13px;color:var(--text-dim);text-align:center;padding:30px 0}
+        .pstate{font-size:13px;color:var(--text-dim);text-align:center;padding:30px 0;line-height:1.6}
         .lmore{width:100%;padding:12px;border-radius:12px;font-size:13px;font-weight:700;background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);cursor:pointer;font-family:'Tajawal',sans-serif;transition:all .2s;margin-top:4px}
         .lmore:hover{background:rgba(255,215,0,0.2)}
         /* MISC */
@@ -362,7 +362,10 @@
         <div class="prayer-strip" id="pstrip"><div style="color:var(--text-dim);font-size:11px;padding:8px 0;grid-column:span 5;text-align:center;">...</div></div>
     </div>
     <div class="stats-bar" id="sbar"><div class="sc"><span class="sn" id="st">—</span><span class="sl" id="sl">قريب</span></div><div class="sc"><span class="sn" id="sn">—</span><span class="sl">أقرب مسافة</span></div><div class="sc"><span class="sn" id="sr">—</span><span class="sl">نطاق البحث</span></div></div>
-    <a class="maps-lnk" id="maplnk" href="#" target="_blank">🗺️ عرض النتائج على خرائط جوجل</a>
+    
+    <!-- LE FILET DE SÉCURITÉ GOOGLE MAPS -->
+    <a class="maps-lnk" id="maplnk" href="#" target="_blank">🗺️ البحث المتقدم في خرائط جوجل</a>
+    
     <div class="orndiv" id="orndiv">✦ 🚗 ★ 🔧 ✦</div>
     <button class="tts-btn" id="ttsbtn" onclick="ttsRestart()">🔊 اضغط لسماع النتائج</button>
     <div class="rhdr" id="rhdr"><div class="rt"><span id="rico">🔍</span><span id="rtxt">النتائج</span></div><div class="rc" id="rcnt">0</div></div>
@@ -378,11 +381,12 @@ const GPS_OPT={enableHighAccuracy:true,timeout:20000,maximumAge:0};
 let lat=null,lng=null,wid=null,seq=0,curTab=null,curNeed=null;
 let lastItems=[],ttsOn=true,arVoice=null,pData=null,pTick=null;
 
+// NOUVEAUX TAGS ÉLARGIS ET REQUÊTES GOOGLE MAPS PRÉCISES
 const TABS={
-    'mec':{icon:'🔧',label:'أقرب المكانيكيين والكراجات',stat:'ميكانيكي',amenities:[],shops:['car_repair'],pray:false},
-    'pieces':{icon:'⚙️',label:'أقرب محلات قطع الغيار',stat:'قطع غيار',amenities:[],shops:['car_parts'],pray:false},
-    'pneu':{icon:'🔴',label:'أقرب بائعي الإطارات',stat:'بائع إطارات',amenities:[],shops:['tyres'],pray:false},
-    'lavage':{icon:'🚿',label:'أقرب محلات الغسيل',stat:'محل غسيل',amenities:['car_wash'],shops:[],pray:false}
+    'mec':{icon:'🔧',label:'أقرب المكانيكيين والكراجات',stat:'ميكانيكي',tags:['shop=car_repair','craft=car_repair','craft=mechanic'],mapQ:'ميكانيكي+سيارات',pray:false},
+    'pieces':{icon:'⚙️',label:'أقرب محلات قطع الغيار',stat:'قطع غيار',tags:['shop=car_parts','shop=auto_parts'],mapQ:'قطع+غيار+سيارات',pray:false},
+    'pneu':{icon:'🔴',label:'أقرب بائعي الإطارات',stat:'بائع إطارات',tags:['shop=tyres'],mapQ:'إطارات+سيارات',pray:false},
+    'lavage':{icon:'🚿',label:'أقرب محلات الغسيل',stat:'محل غسيل',tags:['amenity=car_wash','shop=car_wash'],mapQ:'غسيل+سيارات',pray:false}
 };
 
 function haversine(a,b,c,e){const R=6371,dL=d2r(c-a),dO=d2r(e-b),x=Math.sin(dL/2)**2+Math.cos(d2r(a))*Math.cos(d2r(c))*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -420,12 +424,19 @@ function renderList(items,r,key,shown=5,place='',onExp=null){
     document.getElementById('rcnt').textContent=items.length+' نتيجة';
     
     showFlex('rhdr');show('maplnk');show('orndiv');show('ttsbtn');
+    
+    // Le lien d'urgence Google Maps est configuré ici
+    document.getElementById('maplnk').href=`https://www.google.com/maps/search/${cfg.mapQ}/@${lat},${lng},14z`;
+    document.getElementById('maplnk').innerHTML = '🗺️ البحث المتقدم في خرائط جوجل';
+
     updateStats(items,r,key);
     const list=document.getElementById('rlist');list.innerHTML='';
-    if(!items.length){listMsg('لا توجد نتائج في هذا النطاق.');return;}
     
-    const firstItem = items[0];
-    document.getElementById('maplnk').href=`https://www.google.com/maps/search/?api=1&query=${firstItem.lat},${firstItem.lon}`;
+    // Si OpenStreetMap ne trouve rien (ou trouve de mauvaises données)
+    if(!items.length){
+        list.innerHTML=`<div class="pstate">لم نجد بيانات دقيقة في OpenStreetMap لهذا المكان.<br><br><b>اضغط على زر "خرائط جوجل" أعلاه للبحث الشامل والوصول للنتائج الحقيقية.</b></div>`;
+        return;
+    }
 
     items.slice(0,shown).forEach((m,i)=>{
         const item=document.createElement('div');item.className='ritem';
@@ -445,22 +456,24 @@ function renderList(items,r,key,shown=5,place='',onExp=null){
     else if(onExp){const more=document.createElement('button');more.className='lmore';more.textContent='☽ توسيع نطاق البحث';more.onclick=onExp;list.appendChild(more);}
 }
 
-async function fetchAll(la, lo, r, amenities, shops, ctrl) {
+// NOUVEAU MOTEUR OVERPASS PLUS PRÉCIS ET POLYVALENT
+async function fetchAll(la, lo, r, tags, ctrl) {
     const radiusM = Math.round(r * 1000);
     let q = '';
-    for(const a of (amenities||[])) q += `node["amenity"="${a}"](around:${radiusM},${la},${lo});way["amenity"="${a}"](around:${radiusM},${la},${lo});`;
-    for(const s of (shops||[])) q += `node["shop"="${s}"](around:${radiusM},${la},${lo});way["shop"="${s}"](around:${radiusM},${la},${lo});`;
-    
+    for(const t of (tags||[])) {
+        const [k, v] = t.split('=');
+        q += `node["${k}"="${v}"](around:${radiusM},${la},${lo});way["${k}"="${v}"](around:${radiusM},${la},${lo});`;
+    }
     const res = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST',
-        body: `[out:json][timeout:10];(${q});out center;`,
+        body: `[out:json][timeout:15];(${q});out center;`,
         signal: ctrl.signal
     });
     const data = await res.json();
     return data.elements.map(e => ({
         lat: e.lat || e.center?.lat,
         lon: e.lon || e.center?.lon,
-        name: e.tags?.['name:ar'] || e.tags?.name || ''
+        name: e.tags?.['name:ar'] || e.tags?.name || e.tags?.brand || e.tags?.operator || ''
     }));
 }
 
@@ -477,22 +490,25 @@ async function search(la,lo,key){
         return{name:n,lat:mL,lon:mO,dist:haversine(la,lo,mL,mO)};
     }).sort((a,b)=>a.dist-b.dist);
     function dedup(arr){const seen=new Set();return arr.filter(m=>{const k=m.lat.toFixed(4)+','+m.lon.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});}
+    
     async function tryR(ri,req=true){
         const r=RADII[ri];if(!r)return false;
         listMsg(cfg.icon+' البحث في نطاق '+(r<1?r*1000+' م':r+' كم')+'...');
         let data,t=null;
-        try{const ctrl=new AbortController();t=setTimeout(()=>ctrl.abort(),12000);data=await fetchAll(la,lo,r,cfg.amenities,cfg.shops,ctrl);}
+        try{const ctrl=new AbortController();t=setTimeout(()=>ctrl.abort(),12000);data=await fetchAll(la,lo,r,cfg.tags,ctrl);}
         catch(e){if(s!==seq)return true;listMsg('⚠️ تعذّر الاتصال. حاول مجدداً.');return true;}
         finally{if(t)clearTimeout(t);}
         if(s!==seq)return true;
         let items=dedup(norm(data).filter(m=>m.dist<=r));
         if(cfg.filter)items=items.filter(cfg.filter);
-        if(!items.length){if(req)return false;listMsg('لا توجد نتائج في نطاق '+r+' كم.');return true;}
+        if(!items.length){if(req)return false;renderList([],r,key,5,geo.label,null);return true;}
         renderList(items,r,key,5,geo.label,ri<RADII.length-1?()=>tryR(ri+1,false):null);
         return true;
     }
+    
     for(let i=0;i<RADII.length;i++){if(await tryR(i))return;}
-    listMsg('لم يتم العثور على نتائج.');
+    // S'il ne trouve rien même après avoir cherché sur le plus grand rayon
+    renderList([], 20, key, 5, geo.label, null);
 }
 
 // GPS
