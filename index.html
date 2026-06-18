@@ -378,10 +378,12 @@ const GPS_OPT={enableHighAccuracy:true,timeout:20000,maximumAge:0};
 let lat=null,lng=null,wid=null,seq=0,curTab=null,curNeed=null;
 let lastItems=[],ttsOn=true,arVoice=null,pData=null,pTick=null;
 
-const TABS={'mec':{icon:'🔧',label:'أقرب المكانيكيين والكراجات',stat:'ميكانيكي',amenities:[],shops:['car_repair'],mapQ:'car+repair+garage',pray:false},
-    'pieces':{icon:'⚙️',label:'أقرب محلات قطع الغيار',stat:'قطع غيار',amenities:[],shops:['car_parts'],mapQ:'car+parts',pray:false},
-    'pneu':{icon:'🔴',label:'أقرب بائعي الإطارات',stat:'بائع إطارات',amenities:[],shops:['tyres'],mapQ:'tyres+pneus',pray:false},
-    'lavage':{icon:'🚿',label:'أقرب محلات الغسيل',stat:'محل غسيل',amenities:[],shops:['car_wash'],mapQ:'car+wash',pray:false}};
+const TABS={
+    'mec':{icon:'🔧',label:'أقرب المكانيكيين والكراجات',stat:'ميكانيكي',amenities:[],shops:['car_repair'],pray:false},
+    'pieces':{icon:'⚙️',label:'أقرب محلات قطع الغيار',stat:'قطع غيار',amenities:[],shops:['car_parts'],pray:false},
+    'pneu':{icon:'🔴',label:'أقرب بائعي الإطارات',stat:'بائع إطارات',amenities:[],shops:['tyres'],pray:false},
+    'lavage':{icon:'🚿',label:'أقرب محلات الغسيل',stat:'محل غسيل',amenities:['car_wash'],shops:[],pray:false}
+};
 
 function haversine(a,b,c,e){const R=6371,dL=d2r(c-a),dO=d2r(e-b),x=Math.sin(dL/2)**2+Math.cos(d2r(a))*Math.cos(d2r(c))*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function notif(t,i){Toastify({text:t,duration:4000,gravity:'bottom',position:'right',stopOnFocus:false,style:{background:i?'rgba(10,31,14,0.95)':'rgba(0,0,0,0.9)',color:i?'#fff8e1':'#c8b870',border:'1px solid rgba(255,215,0,0.3)',borderRadius:'10px',fontFamily:"'Tajawal',sans-serif",fontSize:'13px',fontWeight:'700',padding:'10px 16px'}}).showToast();}
@@ -416,11 +418,15 @@ function renderList(items,r,key,shown=5,place='',onExp=null){
     document.getElementById('rico').textContent=cfg.icon;
     document.getElementById('rtxt').textContent=cfg.label+(place?' — '+place:'');
     document.getElementById('rcnt').textContent=items.length+' نتيجة';
-    document.getElementById('maplnk').href='https://www.google.com/maps/search/'+cfg.mapQ+'/@'+lat+','+lng+',15z';
+    
     showFlex('rhdr');show('maplnk');show('orndiv');show('ttsbtn');
     updateStats(items,r,key);
     const list=document.getElementById('rlist');list.innerHTML='';
     if(!items.length){listMsg('لا توجد نتائج في هذا النطاق.');return;}
+    
+    const firstItem = items[0];
+    document.getElementById('maplnk').href=`https://www.google.com/maps/search/?api=1&query=${firstItem.lat},${firstItem.lon}`;
+
     items.slice(0,shown).forEach((m,i)=>{
         const item=document.createElement('div');item.className='ritem';
         const rank=document.createElement('div');rank.className='rrank';rank.textContent=i+1;
@@ -429,7 +435,9 @@ function renderList(items,r,key,shown=5,place='',onExp=null){
         const tp=document.createElement('div');tp.className='rtype';tp.textContent=cfg.icon+' '+cfg.stat;
         const ds=document.createElement('div');ds.className='rdist';ds.textContent='📍 '+(m.dist<1?(m.dist*1000).toFixed(0)+' م':m.dist.toFixed(2)+' كم');
         info.append(nm,tp,ds);
-        const btn=document.createElement('a');btn.className='mbtn';btn.target='_blank';btn.rel='noopener';btn.href='https://www.google.com/maps/search/?api=1&query='+m.lat+'%2C'+m.lon;btn.textContent='✦ خريطة';
+        const btn=document.createElement('a');btn.className='mbtn';btn.target='_blank';btn.rel='noopener';
+        btn.href=`https://www.google.com/maps/search/?api=1&query=${m.lat},${m.lon}`;
+        btn.textContent = 'خريطة';
         const bar=document.createElement('div');bar.className='abar';
         item.append(rank,info,btn,bar);list.appendChild(item);
     });
@@ -437,13 +445,23 @@ function renderList(items,r,key,shown=5,place='',onExp=null){
     else if(onExp){const more=document.createElement('button');more.className='lmore';more.textContent='☽ توسيع نطاق البحث';more.onclick=onExp;list.appendChild(more);}
 }
 
-function viewbox(la,lo,r){const lD=r/111.32,oD=r/(111.32*Math.max(Math.cos(d2r(la)),0.1));return(lo-oD).toFixed(5)+','+(la-lD).toFixed(5)+','+(lo+oD).toFixed(5)+','+(la+lD).toFixed(5);}
-
-async function fetchAll(la,lo,r,amenities,shops,ctrl){
-    const all=[];
-    for(const a of(amenities||[])){try{const res=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&amenity='+a+'&viewbox='+viewbox(la,lo,r)+'&bounded=1&limit=50&accept-language=ar',{signal:ctrl.signal});if(res.ok)all.push(...await res.json());}catch(e){if(e.name==='AbortError')throw e;}}
-    for(const s of(shops||[])){try{const res=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&shop='+s+'&viewbox='+viewbox(la,lo,r)+'&bounded=1&limit=50&accept-language=ar',{signal:ctrl.signal});if(res.ok)all.push(...await res.json());}catch(e){if(e.name==='AbortError')throw e;}}
-    return all;
+async function fetchAll(la, lo, r, amenities, shops, ctrl) {
+    const radiusM = Math.round(r * 1000);
+    let q = '';
+    for(const a of (amenities||[])) q += `node["amenity"="${a}"](around:${radiusM},${la},${lo});way["amenity"="${a}"](around:${radiusM},${la},${lo});`;
+    for(const s of (shops||[])) q += `node["shop"="${s}"](around:${radiusM},${la},${lo});way["shop"="${s}"](around:${radiusM},${la},${lo});`;
+    
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        body: `[out:json][timeout:10];(${q});out center;`,
+        signal: ctrl.signal
+    });
+    const data = await res.json();
+    return data.elements.map(e => ({
+        lat: e.lat || e.center?.lat,
+        lon: e.lon || e.center?.lon,
+        name: e.tags?.['name:ar'] || e.tags?.name || ''
+    }));
 }
 
 async function reverseGeo(la,lo){try{const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+la+'&lon='+lo+'&accept-language=ar');const d=await r.json();if(d?.address){const city=d.address.city||d.address.town||d.address.village||'';const cc=(d.address.country_code||'').toUpperCase();return{label:[city,d.address.state,d.address.country].filter(Boolean).join('، '),cc};}}catch(e){}return{label:'',cc:''};}
@@ -453,7 +471,11 @@ async function search(la,lo,key){
     listMsg(cfg.icon+' جارٍ البحث...');
     const geo=await reverseGeo(la,lo);
     if(s!==seq)return;
-    const norm=arr=>arr.map(p=>{const mL=parseFloat(p.lat),mO=parseFloat(p.lon);const n=p.name||(p.display_name?.split(',')[0].trim())||cfg.stat;return{name:n,lat:mL,lon:mO,dist:haversine(la,lo,mL,mO)};}).sort((a,b)=>a.dist-b.dist);
+    const norm=arr=>arr.map(p=>{
+        const mL=parseFloat(p.lat),mO=parseFloat(p.lon);
+        const n=p.name || cfg.stat;
+        return{name:n,lat:mL,lon:mO,dist:haversine(la,lo,mL,mO)};
+    }).sort((a,b)=>a.dist-b.dist);
     function dedup(arr){const seen=new Set();return arr.filter(m=>{const k=m.lat.toFixed(4)+','+m.lon.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});}
     async function tryR(ri,req=true){
         const r=RADII[ri];if(!r)return false;
@@ -482,7 +504,6 @@ function applyPos(pos,notify=true){
     if(!has||dist>0.05){
         lat=nl;lng=no;
         document.getElementById('gps-txt').textContent='GPS نشط: '+nl.toFixed(5)+'، '+no.toFixed(5)+' · دقة '+Math.round(ac)+'م';
-        // Clé active + son V8
         const gpsKey = document.getElementById('gps-key-icon');
         const mainKey = document.getElementById('key-svg');
         if(gpsKey && !gpsKey.classList.contains('active')){
@@ -531,13 +552,9 @@ function toMin(ts){const p=(ts||'').substring(0,5).split(':');return(+p[0]||0)*6
 async function initPrayer(la,lo){if(!la||!lo)return;const n=new Date();try{const r=await fetch('https://api.aladhan.com/v1/timings/'+n.getDate()+'-'+(n.getMonth()+1)+'-'+n.getFullYear()+'?latitude='+la+'&longitude='+lo+'&method=3');const j=await r.json();if(j.code===200){pData=j.data;renderPrayer();}}catch(e){}if(pTick)clearInterval(pTick);pTick=setInterval(renderPrayer,30000);}
 function renderPrayer(){if(!pData)return;const now=new Date();const nm=now.getHours()*60+now.getMinutes();const mins=PKEYS.map(p=>toMin(pData.timings[p.k]||'00:00'));let ai=-1;for(let i=mins.length-1;i>=0;i--){if(nm>=mins[i]){ai=i;break;}}document.getElementById('pstrip').innerHTML=PKEYS.map((p,i)=>'<div class="pc'+(i===ai?' active':'')+'"><span class="pci">'+p.i+'</span><span class="pcn">'+p.ar+'</span><span class="pct">'+((pData.timings[p.k]||'--:--').substring(0,5))+'</span></div>').join('');try{const h=pData.date?.hijri;if(h)document.getElementById('phijri').textContent=h.day+' '+h.month.ar+' '+h.year;}catch(e){}}
 
-
-// ═══════════════════════════════
-// V8 ENGINE SOUND + KEY SPIN
-// ═══════════════════════════════
+// V8 ENGINE
 let v8Ctx = null;
 let v8Playing = false;
-
 function playV8(){
   if(v8Playing) return;
   v8Playing = true;
@@ -545,38 +562,29 @@ function playV8(){
     v8Ctx = new (window.AudioContext || window.webkitAudioContext)();
     const dur = 2.8;
     const now = v8Ctx.currentTime;
-
-    // Grondement grave V8 — plusieurs oscillateurs
     const freqs = [55, 82, 110, 165, 220];
     freqs.forEach((freq, i) => {
       const osc = v8Ctx.createOscillator();
       const gain = v8Ctx.createGain();
       const distortion = v8Ctx.createWaveShaper();
-
-      // Distortion pour le caractère V8
       const curve = new Float32Array(256);
       for(let j=0;j<256;j++){const x=j*2/256-1;curve[j]=x*(Math.abs(x)+0.5)/(x*x+0.5+1);}
       distortion.curve = curve;
-
       osc.type = i%2===0 ? 'sawtooth' : 'square';
       osc.frequency.setValueAtTime(freq, now);
       osc.frequency.exponentialRampToValueAtTime(freq*1.8, now+0.3);
       osc.frequency.exponentialRampToValueAtTime(freq*1.4, now+dur);
-
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.12/(i+1), now+0.08);
       gain.gain.linearRampToValueAtTime(0.18/(i+1), now+0.3);
       gain.gain.linearRampToValueAtTime(0.08/(i+1), now+dur-0.2);
       gain.gain.linearRampToValueAtTime(0, now+dur);
-
       osc.connect(distortion);
       distortion.connect(gain);
       gain.connect(v8Ctx.destination);
       osc.start(now);
       osc.stop(now+dur);
     });
-
-    // Coup de démarrage — bruit
     const bufSize = v8Ctx.sampleRate * 0.15;
     const buf = v8Ctx.createBuffer(1, bufSize, v8Ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -589,19 +597,15 @@ function playV8(){
     noise.connect(noiseGain);
     noiseGain.connect(v8Ctx.destination);
     noise.start(now);
-
-    // Tourner la clé principale au démarrage
     const mainKey = document.getElementById('key-svg');
     if(mainKey){
       mainKey.style.animation='key-spin 0.6s ease-in-out';
       setTimeout(()=>{ mainKey.style.animation='key-glow-pulse 2.5s ease-in-out infinite'; }, 700);
     }
-
     setTimeout(()=>{ v8Playing=false; }, (dur+0.2)*1000);
   } catch(e){ v8Playing=false; }
 }
 
-// Clic sur la clé principale → démarrage son
 document.addEventListener('DOMContentLoaded',()=>{
   const crown = document.getElementById('crown-key');
   if(crown) crown.addEventListener('click', playV8);
