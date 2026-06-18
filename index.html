@@ -226,20 +226,14 @@
     </filter>
   </defs>
   <g filter="url(#glow-key)">
-    <!-- Corps principal de la clé de voiture -->
     <rect x="8" y="22" width="38" height="20" rx="10" fill="url(#gk1)" stroke="#B8860B" stroke-width="1"/>
-    <!-- Bouton central -->
     <rect x="12" y="26" width="30" height="12" rx="6" fill="url(#gk2)" stroke="#FFD700" stroke-width="0.5"/>
-    <!-- Boutons de la télécommande -->
     <rect x="15" y="28" width="7" height="4" rx="2" fill="#B8860B" stroke="#FFE566" stroke-width="0.5"/>
     <rect x="25" y="28" width="7" height="4" rx="2" fill="#B8860B" stroke="#FFE566" stroke-width="0.5"/>
     <rect x="35" y="28" width="4" height="4" rx="2" fill="#B8860B" stroke="#FFE566" stroke-width="0.5"/>
-    <!-- Anneau de la clé -->
     <circle cx="52" cy="32" r="7" fill="none" stroke="url(#gk1)" stroke-width="3.5"/>
     <circle cx="52" cy="32" r="3.5" fill="url(#gk1)"/>
-    <!-- Tige de connexion anneau-corps -->
     <rect x="44" y="30" width="9" height="4" rx="2" fill="url(#gk1)" stroke="#B8860B" stroke-width="0.5"/>
-    <!-- Reflet brillant -->
     <rect x="10" y="24" width="20" height="3" rx="1.5" fill="#FFE566" opacity="0.45" filter="url(#shine-key)"/>
     <circle cx="52" cy="29" r="2" fill="#FFE566" opacity="0.5"/>
   </g>
@@ -281,7 +275,7 @@
 </div>
     <div class="need-label">▸ مَاذَا تَحْتَاجُ لِسَيَّارَتِكَ ؟</div>
     <div class="need-grid">
-        <div class="need-card" id="nc-mec" onclick="pickNeed('mec',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="need-card" id="nc-mec" onclick="switchTab('mec',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="gold-mec" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#B8860B"/>
@@ -297,7 +291,7 @@
     <circle cx="8" cy="31" r="2" fill="#FFE566"/>
   </g>
 </svg></span><span class="nn" style="">ميكانيكي</span><span class="ns">Mécanicien · Garage</span></div>
-        <div class="need-card" id="nc-pieces" onclick="pickNeed('pieces',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="need-card" id="nc-pieces" onclick="switchTab('pieces',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="gold-pieces" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#B8860B"/>
@@ -314,7 +308,7 @@
     <circle cx="20" cy="18" r="3" fill="#FFD700" stroke="#B8860B" stroke-width="0.5"/>
   </g>
 </svg></span><span class="nn" style="">قطع غيار</span><span class="ns">Pièces détachées</span></div>
-        <div class="need-card" id="nc-pneu" onclick="pickNeed('pneu',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="need-card" id="nc-pneu" onclick="switchTab('pneu',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="gold-pneu" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#B8860B"/>
@@ -339,7 +333,7 @@
     <line x1="15.1" y1="24.9" x2="9.4" y2="30.6" stroke="#FFC200" stroke-width="1.2" stroke-linecap="round"/>
   </g>
 </svg></span><span class="nn" style="">بائع إطارات</span><span class="ns">Pneus · Roues</span></div>
-        <div class="need-card" id="nc-lavage" onclick="pickNeed('lavage',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="need-card" id="nc-lavage" onclick="switchTab('lavage',this)"><span class="ni"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="gold-lavage" x1="0" y1="40" x2="40" y2="0" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#B8860B"/>
